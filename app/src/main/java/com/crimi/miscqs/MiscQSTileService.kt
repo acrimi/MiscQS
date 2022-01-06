@@ -52,7 +52,7 @@ abstract class MiscQSTileService(
         return if (Settings.System.canWrite(this)) {
             true
         } else {
-            startActivity(
+            startActivityAndCollapse(
                 Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     data = (Uri.parse("package:${packageName}"))
