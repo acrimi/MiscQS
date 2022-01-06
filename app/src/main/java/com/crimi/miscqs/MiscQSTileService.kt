@@ -2,13 +2,11 @@ package com.crimi.miscqs
 
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.service.quicksettings.TileService
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 
 abstract class MiscQSTileService(
     private val settingName: String
@@ -17,20 +15,9 @@ abstract class MiscQSTileService(
     private val handler = Handler(Looper.getMainLooper())
     private val pollingListener = object : Runnable {
         override fun run() {
-            var update = false
             val state = getState()
             if (state != qsTile.state) {
                 qsTile.state = state
-                update = true
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val subtitle = getSubtitle()
-                if (subtitle != qsTile.subtitle) {
-                    qsTile.subtitle = subtitle
-                    update = true
-                }
-            }
-            if (update) {
                 qsTile.updateTile()
             }
             handler.postDelayed(this, pollInterval)
@@ -63,11 +50,6 @@ abstract class MiscQSTileService(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
-    protected open fun getSubtitle(): CharSequence? {
-        return qsTile.subtitle
-    }
-
     protected abstract fun getNewValue()
 
     protected abstract fun getState(): Int
@@ -76,9 +58,6 @@ abstract class MiscQSTileService(
         if (checkSettingsPermission()) {
             getNewValue()
             qsTile.state = getState()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                qsTile.subtitle = getSubtitle()
-            }
             qsTile.updateTile()
         }
     }
