@@ -2,13 +2,35 @@ package com.crimi.miscqs
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.service.quicksettings.TileService
 import android.widget.Toast
 
-open class MiscQSTileService : TileService() {
+abstract class MiscQSTileService(
+    private val settingName: String
+) : TileService() {
+    private val pollInterval = 1000L
+    private val handler = Handler(Looper.getMainLooper())
+    private val pollingListener = object : Runnable {
+        override fun run() {
+            val state = getState()
+            if (state != qsTile.state) {
+                qsTile.state = state
+                qsTile.updateTile()
+            }
+            handler.postDelayed(this, pollInterval)
+        }
+    }
 
-    protected fun checkSettingsPermission(): Boolean {
+    protected var intValue: Int
+        get() = Settings.System.getInt(contentResolver, settingName)
+        set(value) {
+            Settings.System.putInt(contentResolver, settingName, value)
+        }
+
+    private fun checkSettingsPermission(): Boolean {
         return if (Settings.System.canWrite(this)) {
             true
         } else {
@@ -23,7 +45,27 @@ open class MiscQSTileService : TileService() {
         }
     }
 
+    protected abstract fun getNewValue()
+
+    protected abstract fun getState(): Int
+
+    override fun onClick() {
+        if (checkSettingsPermission()) {
+            getNewValue()
+            qsTile.state = getState()
+            qsTile.updateTile()
+        }
+    }
+
     override fun onTileAdded() {
         checkSettingsPermission()
+    }
+
+    override fun onStartListening() {
+        handler.postDelayed(pollingListener, pollInterval)
+    }
+
+    override fun onStopListening() {
+        handler.removeCallbacksAndMessages(null)
     }
 }
